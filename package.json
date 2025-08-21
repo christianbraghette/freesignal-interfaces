@@ -1,0 +1,24 @@
+{
+  "name": "@freesignal/interfaces",
+  "version": "0.1.0",
+  "description": "Types package for FreeSignal protocol",
+  "homepage": "https://github.com/christianbraghette/freesignal-interfaces#readme",
+  "bugs": {
+    "url": "https://github.com/christianbraghette/freesignal-interfaces/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christianbraghette/freesignal-interfaces.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "author": "Christian Braghette",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc && node ./build/test.js",
+    "build": "tsc && node ./build/build.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21"
+  }
+}
