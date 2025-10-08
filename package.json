@@ -1,6 +1,6 @@
 {
   "name": "@freesignal/interfaces",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Types package for FreeSignal protocol",
   "homepage": "https://github.com/christianbraghette/freesignal-interfaces#readme",
   "bugs": {
