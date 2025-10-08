@@ -21,7 +21,7 @@
 export interface Encodable {
     encode(): Uint8Array;
     toString(): string;
-    toJSON<T>(): T;
+    toJSON(): any;
 }
 export namespace Encodable {
     const properties = ['encode', 'toString', 'toJSON'];
