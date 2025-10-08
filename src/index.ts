@@ -41,6 +41,10 @@ export interface LocalStorage<K, T> {
     entries(): LocalStorageIterator<[K, T]>;
 }
 
+export type Database<K extends string | number | symbol> = {
+    [key in K]: LocalStorage<any, any>;
+};
+
 export interface KeyExchangeData {
     readonly version: number;
     readonly publicKey: string;
