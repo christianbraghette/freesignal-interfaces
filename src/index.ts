@@ -34,7 +34,7 @@ export namespace Encodable {
 type LocalStorageIterator<T> = Iterable<T>;
 
 export interface LocalStorage<K, T> {
-    set(key: K, value: T): Promise<this>;
+    set(key: K, value: T): Promise<void>;
     get(key: K): Promise<T | undefined>;
     has(key: K): Promise<boolean>;
     delete(key: K): Promise<boolean>;
