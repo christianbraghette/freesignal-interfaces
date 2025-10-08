@@ -38,7 +38,7 @@ export interface LocalStorage<K, T> {
     get(key: K): Promise<T | undefined>;
     has(key: K): Promise<boolean>;
     delete(key: K): Promise<boolean>;
-    entries(): Promise<LocalStorageIterator<[K, T]>>;
+    entries(): LocalStorageIterator<[K, T]>;
 }
 
 export interface KeyExchangeData {
