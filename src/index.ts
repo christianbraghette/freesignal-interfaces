@@ -17,20 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>
  */
 
-/** */
-export interface Encodable {
-    encode(): Uint8Array;
-    toString(): string;
-    toJSON(): any;
-}
-export namespace Encodable {
-    const properties = ['encode', 'toString', 'toJSON'];
-
-    export function isEncodable(obj: any): boolean {
-        return !properties.some(prop => !obj[prop]);
-    }
-}
-
 type LocalStorageIterator<T> = Iterable<T>;
 
 export interface LocalStorage<K, T> {
@@ -46,9 +32,13 @@ export type Database<T extends { [key: string]: LocalStorage<any, any> }> = {
     [key in keyof T]: T[key];
 };
 
+export interface IdentityKey extends Uint8Array {
+    readonly signatureKey: string;
+    readonly exchangeKey: string;
+}
+
 export interface KeyExchangeData {
     readonly version: number;
-    readonly publicKey: string;
     readonly identityKey: string;
     readonly signedPreKey: string;
     readonly signature: string;
@@ -57,7 +47,6 @@ export interface KeyExchangeData {
 
 export interface KeyExchangeSynMessage {
     readonly version: number;
-    readonly publicKey: string;
     readonly identityKey: string;
     readonly ephemeralKey: string;
     readonly signedPreKeyHash: string;
@@ -67,7 +56,6 @@ export interface KeyExchangeSynMessage {
 
 export interface KeyExchangeDataBundle {
     readonly version: number;
-    readonly publicKey: string;
     readonly identityKey: string;
     readonly signedPreKey: string;
     readonly signature: string;
