@@ -32,7 +32,14 @@ export type Database<T extends { [key: string]: LocalStorage<any, any> }> = {
     [key in keyof T]: T[key];
 };
 
-export interface IdentityKey {
+export interface Encodable {
+    /**
+     * Serializes the payload into a Uint8Array for transport.
+     */
+    encode(): Uint8Array;
+}
+
+export interface IdentityKey extends Encodable {
     readonly signatureKey: Uint8Array;
     readonly exchangeKey: Uint8Array;
 }
