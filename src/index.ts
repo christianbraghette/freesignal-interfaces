@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>
  */
 
-type LocalStorageIterator<T> = Iterable<T>;
+//type LocalStorageIterator<T> = Iterable<T>;
 
 export interface LocalStorage<K, T> {
     set(key: K, value: T): Promise<void>;
@@ -25,7 +25,7 @@ export interface LocalStorage<K, T> {
     has(key: K): Promise<boolean>;
     delete(key: K): Promise<boolean>;
     clear(): Promise<void>;
-    entries(): LocalStorageIterator<[K, T]>;
+    //entries(): LocalStorageIterator<[K, T]>;
 }
 
 export type Database<T extends { [key: string]: LocalStorage<any, any> }> = {
@@ -36,12 +36,7 @@ export interface Encodable {
     /**
      * Serializes the payload into a Uint8Array for transport.
      */
-    encode(): Uint8Array;
-}
-
-export interface IdentityKey extends Encodable {
-    readonly signatureKey: Uint8Array;
-    readonly exchangeKey: Uint8Array;
+    toBytes(): Uint8Array;
 }
 
 export interface KeyExchangeData {
