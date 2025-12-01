@@ -61,7 +61,7 @@ export interface KeyExchangeDataBundle {
     readonly identityKey: string;
     readonly signedPreKey: string;
     readonly signature: string;
-    readonly onetimePreKey: string[];
+    readonly onetimePreKeys: string[];
 }
 
 interface UUIDv4 {
