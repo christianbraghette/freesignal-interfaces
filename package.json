@@ -1,6 +1,6 @@
 {
   "name": "@freesignal/interfaces",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Types package for FreeSignal protocol",
   "homepage": "https://github.com/christianbraghette/freesignal-interfaces#readme",
   "bugs": {
@@ -20,8 +20,9 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "test": "tsc && node ./build/test.js",
-    "build": "tsc && node ./build/build.js"
+    "pretest": "tsc",
+    "test": "node ./dist/test.js",
+    "prepare": "tsc"
   },
   "devDependencies": {
     "@types/node": "^22.15.21"
