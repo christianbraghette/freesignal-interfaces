@@ -23,7 +23,7 @@ export interface LocalStorage<K, T> {
     has(key: K): Promise<boolean>;
     delete(key: K): Promise<boolean>;
     clear(): Promise<void>;
-    entries(): Promise<Iterator<[K, T]>>;
+    entries(): Promise<Iterable<[K, T]>>;
 }
 
 export type Database<T extends { [key: string]: LocalStorage<any, any> }> = {
