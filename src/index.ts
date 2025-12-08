@@ -17,15 +17,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>
  */
 
-//type LocalStorageIterator<T> = Iterable<T>;
-
 export interface LocalStorage<K, T> {
     set(key: K, value: T): Promise<void>;
     get(key: K): Promise<T | undefined>;
     has(key: K): Promise<boolean>;
     delete(key: K): Promise<boolean>;
     clear(): Promise<void>;
-    //entries(): LocalStorageIterator<[K, T]>;
+    entries(): Promise<Iterator<[K, T]>>;
 }
 
 export type Database<T extends { [key: string]: LocalStorage<any, any> }> = {
