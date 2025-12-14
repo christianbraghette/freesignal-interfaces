@@ -70,7 +70,8 @@ interface UUIDv4 {
 
 export interface Crypto {
     hash(message: Uint8Array, algorithm?: Crypto.HashAlgorithms): Uint8Array;
-    hmac(key: Uint8Array, message: Uint8Array, length?: number, algorithm?: Crypto.HmacAlgorithms): Uint8Array
+    pwhash(keyLength: number, password: string | Uint8Array, salt: Uint8Array, opsLimit: number, memLimit: number): Uint8Array;
+    hmac(key: Uint8Array, message: Uint8Array, length?: number, algorithm?: Crypto.HmacAlgorithms): Uint8Array;
     hkdf(key: Uint8Array, salt: Uint8Array, info?: Uint8Array | string, length?: number): Uint8Array;
 
     readonly KeyPair: typeof Crypto.KeyPair;
@@ -82,8 +83,8 @@ export interface Crypto {
     randomBytes(n: number): Uint8Array;
 }
 export namespace Crypto {
-    export type HashAlgorithms = 'sha224' | 'sha256' | 'sha384' | 'sha512';
-    export type HmacAlgorithms = 'kmac128' | 'kmac256';
+    export type HashAlgorithms = string;
+    export type HmacAlgorithms = string;
 
     export type KeyPair = {
         readonly publicKey: Uint8Array;
@@ -97,8 +98,8 @@ export namespace Crypto {
         readonly keyLength: number;
         readonly nonceLength: number;
 
-        encrypt(msg: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array;
-        decrypt(msg: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array | undefined;
+        encrypt(message: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array;
+        decrypt(message: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array | undefined;
     }
 
     export interface ECDH {
@@ -106,20 +107,19 @@ export namespace Crypto {
         readonly secretKeyLength: number;
 
         keyPair(secretKey?: Uint8Array): KeyPair;
-        sharedKey(publicKey: Uint8Array, secretKey: Uint8Array): Uint8Array;
-        scalarMult(n: Uint8Array, p: Uint8Array): Uint8Array;
+        scalarMult(secretKey: Uint8Array, publicKey: Uint8Array): Uint8Array;
     }
 
     export interface EdDSA {
         readonly publicKeyLength: number;
         readonly secretKeyLength: number;
         readonly signatureLength: number;
-        readonly seedLength: number;
+        //readonly seedLength: number;
 
         keyPair(secretKey?: Uint8Array): KeyPair;
         keyPairFromSeed(seed: Uint8Array): KeyPair;
-        sign(msg: Uint8Array, secretKey: Uint8Array): Uint8Array;
-        verify(msg: Uint8Array, sig: Uint8Array, publicKey: Uint8Array): boolean;
+        sign(message: Uint8Array, secretKey: Uint8Array): Uint8Array;
+        verify(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): boolean;
     }
 
     export interface UUID {
