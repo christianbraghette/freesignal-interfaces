@@ -17,24 +17,103 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>
  */
 
-export interface LocalStorage<K, T> {
-    set(key: K, value: T): Promise<void>;
-    get(key: K): Promise<T | undefined>;
-    has(key: K): Promise<boolean>;
-    delete(key: K): Promise<boolean>;
-    clear(): Promise<void>;
-    entries(): Promise<Iterable<[K, T]>>;
-}
+import type EventEmitter from "easyemitter.ts";
 
-export type Database<T extends { [key: string]: LocalStorage<any, any> }> = {
-    [key in keyof T]: T[key];
-};
+/** */
+export type Bytes = Uint8Array;
 
 export interface Encodable {
     /**
-     * Serializes the payload into a Uint8Array for transport.
+     * Serializes the payload into a Bytes for transport.
      */
-    toBytes(): Uint8Array;
+    readonly bytes: Bytes;
+}
+
+export type TransportEvents<T> = {
+    send: T,
+    receive: T
+};
+
+interface UUIDv4 extends Encodable {
+    toString(): string;
+    toJSON(): string;
+}
+
+export interface Crypto {
+    hash(message: Bytes, algorithm?: Crypto.HashAlgorithms): Bytes;
+    pwhash(keyLength: number, password: string | Bytes, salt: Bytes, opsLimit: number, memLimit: number): Bytes;
+    hmac(key: Bytes, message: Bytes, length?: number, algorithm?: Crypto.HmacAlgorithms): Bytes;
+    hkdf(key: Bytes, salt: Bytes, info?: Bytes | string, length?: number): Bytes;
+
+    readonly Box: {
+        readonly keyLength: number;
+        readonly nonceLength: number;
+
+        encrypt(message: Bytes, nonce: Bytes, key: Bytes): Bytes;
+        decrypt(message: Bytes, nonce: Bytes, key: Bytes): Bytes | undefined;
+    };
+
+    readonly ECDH: {
+        readonly publicKeyLength: number;
+        readonly secretKeyLength: number;
+
+        keyPair(secretKey?: Bytes): Crypto.KeyPair;
+        scalarMult(secretKey: Bytes, publicKey: Bytes): Bytes;
+    };
+
+    readonly EdDSA: {
+        readonly publicKeyLength: number;
+        readonly secretKeyLength: number;
+        readonly signatureLength: number;
+
+        keyPair(secretKey?: Bytes): Crypto.KeyPair;
+        keyPairFromSeed(seed: Bytes): Crypto.KeyPair;
+        sign(message: Bytes, secretKey: Bytes): Bytes;
+        verify(signature: Bytes, message: Bytes, publicKey: Bytes): boolean;
+
+        toSecretECDHKey(secretKey: Bytes): Bytes;
+        toPublicECDHKey(publicKey: Bytes): Bytes;
+    };
+
+    readonly UUID: {
+        generate(): UUIDv4;
+        stringify(arr: Bytes, offset?: number): string;
+        parse(uuid: string): Bytes;
+    };
+
+    readonly Utils: {
+        decodeUTF8(array: Bytes): string;
+        encodeUTF8(string: string): Bytes;
+        decodeBase64(array: Bytes): string;
+        encodeBase64(string: string): Bytes;
+        decodeBase64URL(array: Bytes): string;
+        encodeBase64URL(string: string): Bytes;
+        decodeHex(array: Bytes): string;
+        encodeHex(string: string): Bytes;
+        bytesToNumber(array: Bytes, endian?: "big" | "little"): number;
+        numberToBytes(number: number, length?: number, endian?: "big" | "little"): Bytes;
+        compareBytes(a: Bytes, b: Bytes, ...c: Bytes[]): boolean;
+        concatBytes(...arrays: Bytes[]): Bytes;
+        encodeData(obj: any): Bytes;
+        decodeData<T>(array: Bytes): T;
+    }
+
+    randomBytes(n: number): Bytes;
+}
+export namespace Crypto {
+    export type HashAlgorithms = string;
+    export type HmacAlgorithms = string;
+
+    export type KeyPair = {
+        readonly publicKey: Bytes;
+        readonly secretKey: Bytes;
+    }
+
+    export type Box = Crypto['Box'];
+    export type ECDH = Crypto['ECDH'];
+    export type EdDSA = Crypto['EdDSA'];
+    export type UUID = Crypto['UUID'];
+    export type Utils = Crypto['Utils'];
 }
 
 export interface KeyExchangeData {
@@ -62,69 +141,148 @@ export interface KeyExchangeDataBundle {
     readonly onetimePreKeys: string[];
 }
 
-interface UUIDv4 {
-    toString(): string
-    toJSON(): string
-    toBuffer(): Uint8Array
+export interface UserId extends Encodable {
+    toString(): string;
+    toUrl(): string;
+    toJSON(): string;
 }
 
-export interface Crypto {
-    hash(message: Uint8Array, algorithm?: Crypto.HashAlgorithms): Uint8Array;
-    pwhash(keyLength: number, password: string | Uint8Array, salt: Uint8Array, opsLimit: number, memLimit: number): Uint8Array;
-    hmac(key: Uint8Array, message: Uint8Array, length?: number, algorithm?: Crypto.HmacAlgorithms): Uint8Array;
-    hkdf(key: Uint8Array, salt: Uint8Array, info?: Uint8Array | string, length?: number): Uint8Array;
+export interface PublicIdentity extends Encodable {
+    readonly userId: UserId
+    readonly publicKey: Bytes
 
-    readonly KeyPair: typeof Crypto.KeyPair;
-    readonly box: Crypto.box;
-    readonly ECDH: Crypto.ECDH;
-    readonly EdDSA: Crypto.EdDSA;
-    readonly UUID: Crypto.UUID;
+    toPublicECDHKey(): Bytes;
 
-    randomBytes(n: number): Uint8Array;
+    toString(): string;
+    toJSON(): string;
 }
-export namespace Crypto {
-    export type HashAlgorithms = string;
-    export type HmacAlgorithms = string;
 
-    export type KeyPair = {
-        readonly publicKey: Uint8Array;
-        readonly secretKey: Uint8Array;
-    }
-    export declare namespace KeyPair {
-        export function isKeyPair(obj: any): boolean;
-    }
+type IdentityKeyPair = Crypto.KeyPair;
 
-    export interface box {
-        readonly keyLength: number;
-        readonly nonceLength: number;
+export interface Identity extends IdentityKeyPair, PublicIdentity {
+    toSecretECDHKey(): Bytes;
+};
 
-        encrypt(message: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array;
-        decrypt(message: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array | undefined;
-    }
+export interface Ciphertext extends Encodable {
+    readonly version: number;
+    readonly header: Bytes;
+    readonly hashkey?: Bytes;
+    readonly nonce?: Bytes;
+    readonly payload: Bytes;
+    readonly length: number;
 
-    export interface ECDH {
-        readonly publicKeyLength: number;
-        readonly secretKeyLength: number;
+    toJSON(): {
+        version: number;
+        header: string;
+        hashkey?: string;
+        nonce?: string;
+        payload: string;
+    };
+}
 
-        keyPair(secretKey?: Uint8Array): KeyPair;
-        scalarMult(secretKey: Uint8Array, publicKey: Uint8Array): Uint8Array;
-    }
+export interface Session {
+    readonly userId: string;
+    readonly sessionTag: string;
 
-    export interface EdDSA {
-        readonly publicKeyLength: number;
-        readonly secretKeyLength: number;
-        readonly signatureLength: number;
-        //readonly seedLength: number;
+    encrypt(plaintext: Bytes): Ciphertext;
+    decrypt(ciphertext: Ciphertext | Bytes): Bytes;
 
-        keyPair(secretKey?: Uint8Array): KeyPair;
-        keyPairFromSeed(seed: Uint8Array): KeyPair;
-        sign(message: Uint8Array, secretKey: Uint8Array): Uint8Array;
-        verify(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): boolean;
-    }
+    hasSkippedKeys(): boolean;
+    save(): Promise<void>;
+}
 
-    export interface UUID {
-        generate(): UUIDv4;
-        stringify(arr: Uint8Array, offset?: number): string;
-        parse(uuid: string): Uint8Array;
-    }
+export interface SessionManager {
+    getSession(sessionTag: string): Promise<Session | null>
+    createSession(initialState: InitialSessionState | Session): Promise<Session>
+
+    encrypt(userId: UserId | string, plaintext: Bytes): Promise<Ciphertext>
+    decrypt(userId: UserId | string, ciphertext: Ciphertext | Bytes): Promise<Bytes>
+}
+
+export interface PreKeyBundle {
+    readonly version: number;
+    readonly identityKey: string;
+    readonly signedPreKey: string;
+    readonly signature: string;
+    readonly onetimePreKeys: string[];
+}
+
+export interface PreKeyMessage {
+    readonly version: number;
+    readonly identityKey: string;
+    readonly ephemeralKey: string;
+    readonly signedPreKeyHash: string;
+    readonly onetimePreKeyHash: string;
+    readonly associatedData: string;
+}
+
+export type PreKeyId = string;
+export type PreKey = Crypto.KeyPair;
+
+export interface KeyExchangeManager {
+    readonly socket: EventEmitter<TransportEvents<PreKeyMessage> & { session: Session }>;
+
+    createPreKeyBundle(): Promise<PreKeyBundle>;
+    processPreKeyBundle(bundle: PreKeyBundle): Promise<Session>;
+}
+
+export interface SessionState {
+    userId: string;
+    sessionTag: string;
+    secretKey: string;
+    rootKey: string;
+    sendingChain?: KeyChainState;
+    receivingChain?: KeyChainState;
+    headerKeys: [string, string][];
+    headerKey?: string;
+    nextHeaderKey?: string;
+    previousKeys: [string, string][];
+}
+
+export type InitialSessionState = { userId: string, rootKey: string, remoteKey?: Bytes } & Partial<SessionState>;
+
+export interface KeyChainState {
+    publicKey: string;
+    remoteKey: string;
+    chainKey: string;
+    headerKey?: string;
+    nextHeaderKey: string;
+    count: number;
+    previousCount: number
+}
+
+export interface KeyStore {
+    getIdentity(): Promise<Identity>;
+
+    loadSession(sessionTag: string): Promise<SessionState | null>
+    storeSession(sessionTag: string, session: SessionState): Promise<void>
+
+    storePreKey(id: PreKeyId, value: PreKey): Promise<void>
+    loadPreKey(id: PreKeyId): Promise<PreKey | null>
+    removePreKey(id: PreKeyId): Promise<void>
+}
+
+export interface KeyStoreFactory {
+    createStore(identity: Identity): Promise<KeyStore>;
+    getStore(identity: PublicIdentity | string): Promise<KeyStore | null>;
+    deleteStore(identity: PublicIdentity | string): Promise<void>;
+}
+
+export interface User {
+    readonly id: UserId;
+    readonly publicIdentity: PublicIdentity;
+    readonly socket: EventEmitter<TransportEvents<PreKeyMessage>>;
+
+    encrypt<T>(to: UserId | string, plaintext: T): Promise<Ciphertext>
+    decrypt<T>(from: UserId | string, ciphertext: Ciphertext | Bytes): Promise<T>
+
+    waitHandshake(from: UserId | string, timeout?: number): Promise<void>
+
+    generatePreKeyBundle(): Promise<PreKeyBundle>
+    handleIncomingPreKeyBundle(bundle: PreKeyBundle): void
+}
+
+export interface UserFactory {
+    create(): Promise<User>;
+    destroy(user: User): boolean;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@freesignal/interfaces",
-  "version": "0.3.1",
+  "version": "0.10.0",
   "description": "Types package for FreeSignal protocol",
   "homepage": "https://github.com/christianbraghette/freesignal-interfaces#readme",
   "bugs": {
@@ -25,6 +25,7 @@
     "prepare": "tsc"
   },
   "devDependencies": {
-    "@types/node": "^22.15.21"
+    "@types/node": "^22.15.21",
+    "easyemitter.ts": "^1.2.0"
   }
 }
