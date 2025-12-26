@@ -29,10 +29,7 @@ export interface Encodable {
     readonly bytes: Bytes;
 }
 
-export type TransportEvents<T> = {
-    send: T,
-    receive: T
-};
+export type TransportEvents<T> = { send: T, receive: T };
 
 interface UUIDv4 extends Encodable {
     toString(): string;
@@ -163,19 +160,32 @@ export interface Identity extends IdentityKeyPair, PublicIdentity {
     toSecretECDHKey(): Bytes;
 };
 
+export interface CiphertextHeader extends Encodable {
+    readonly count: number;
+    readonly previous: number;
+    readonly publicKey: Bytes;
+    readonly nonce: Bytes;
+
+    toJSON(): {
+        count: number;
+        previous: number;
+        publicKey: string;
+    }
+}
+
 export interface Ciphertext extends Encodable {
     readonly version: number;
+    readonly hashkey: Bytes;
     readonly header: Bytes;
-    readonly hashkey?: Bytes;
-    readonly nonce?: Bytes;
+    readonly nonce: Bytes;
     readonly payload: Bytes;
     readonly length: number;
 
     toJSON(): {
         version: number;
         header: string;
-        hashkey?: string;
-        nonce?: string;
+        hashkey: string;
+        nonce: string;
         payload: string;
     };
 }
@@ -196,7 +206,7 @@ export interface SessionManager {
     createSession(initialState: InitialSessionState | Session): Promise<Session>
 
     encrypt(userId: UserId | string, plaintext: Bytes): Promise<Ciphertext>
-    decrypt(userId: UserId | string, ciphertext: Ciphertext | Bytes): Promise<Bytes>
+    decrypt(ciphertext: Ciphertext | Bytes): Promise<Bytes>
 }
 
 export interface PreKeyBundle {
@@ -220,7 +230,7 @@ export type PreKeyId = string;
 export type PreKey = Crypto.KeyPair;
 
 export interface KeyExchangeManager {
-    readonly socket: EventEmitter<TransportEvents<PreKeyMessage> & { session: Session }>;
+    readonly emitter: EventEmitter<TransportEvents<PreKeyMessage> & { session: Session }>;
 
     createPreKeyBundle(): Promise<PreKeyBundle>;
     processPreKeyBundle(bundle: PreKeyBundle): Promise<Session>;
@@ -254,8 +264,13 @@ export interface KeyChainState {
 export interface KeyStore {
     getIdentity(): Promise<Identity>;
 
+    getUserSession(userId: UserId | string): Promise<string | null>
+
+    setSessionTag(hashkey: Bytes | string, sessionTag: string): Promise<void>
+    getSessionTag(hashkey: Bytes | string): Promise<string | null>
+
     loadSession(sessionTag: string): Promise<SessionState | null>
-    storeSession(sessionTag: string, session: SessionState): Promise<void>
+    storeSession(session: SessionState): Promise<void>
 
     storePreKey(id: PreKeyId, value: PreKey): Promise<void>
     loadPreKey(id: PreKeyId): Promise<PreKey | null>
@@ -271,10 +286,10 @@ export interface KeyStoreFactory {
 export interface User {
     readonly id: UserId;
     readonly publicIdentity: PublicIdentity;
-    readonly socket: EventEmitter<TransportEvents<PreKeyMessage>>;
+    readonly emitter: EventEmitter<TransportEvents<PreKeyMessage>>;
 
     encrypt<T>(to: UserId | string, plaintext: T): Promise<Ciphertext>
-    decrypt<T>(from: UserId | string, ciphertext: Ciphertext | Bytes): Promise<T>
+    decrypt<T>(ciphertext: Ciphertext | Bytes): Promise<T>
 
     waitHandshake(from: UserId | string, timeout?: number): Promise<void>
 
